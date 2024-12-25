@@ -1,1 +1,110 @@
-#siia tuleb selle hooaja kood copytuna lol
+from hub import motion_sensor, port, button, light_matrix, light
+import motor, runloop, motor_pair, color_sensor, color, time
+
+motor_pair.pair(motor_pair.PAIR_1, port.C,port.D) # Pairs motors
+
+# Gyro and wheel motor
+motion_sensor.reset_yaw(0)
+motor.reset_relative_position(port.C, 0)
+
+MIN_TURN = 100
+MAX_TURN = 600
+
+wheel = 15.5 #cm (wheel circumference)
+
+def difference(difference): # Calculates shortest way to wanted angle
+    while difference > 180:
+        difference -= 360
+    while difference < -180:
+        difference += 360
+    return difference
+
+def yaw(): # returns yaw angle
+    return int(motion_sensor.tilt_angles()[0]*-0.1)
+
+def relative(): # returns average relative travelled distance of both motors
+    relative = int(((abs(motor.relative_position(port.A)))+(abs(motor.relative_position(port.B))))/2)
+    return relative
+
+async def drive(cm, angle, maxspeed = 1110):
+    motor.reset_relative_position(port.C, 0)
+    motor.reset_relative_position(port.D, 0)
+    distance = int(cm / wheel * 360)
+    P = 0
+    I = 0
+    D = 0
+    Kp = 1.5
+    Ki = 0.0014
+    Kd = 0.5
+    delay = 5
+    deacceleration = 0.3
+    last = 0
+    while relative() < distance:
+        curyaw = yaw()
+        togo = distance - relative()
+        if togo > (distance * deacceleration):
+            speed = maxspeed
+        else:
+            speed = max(int(maxspeed*togo/distance*2), 200)
+        P = (difference(angle - curyaw))
+        I += P*delay
+        D = (P - last)/delay
+        correction = min(100, max(-100, int(P*Kp + I*Ki + D*Kd)))
+        motor_pair.move(motor_pair.PAIR_1, correction, velocity= speed, acceleration= 950)
+        last = P
+        time.sleep_ms(delay)
+    motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
+
+#Gyro turning
+async def turn(angle): # takes input: wished angle (-180 to 180)
+    while abs(yaw() - angle) > 1: # turns until wished angle is reached
+        curyaw = yaw()
+        speed = int((angle-curyaw)**2*0.086) # every cycle calculates optimal speed
+        speed = max(MIN_TURN, min(speed, MAX_TURN))
+        poorata = difference(angle - curyaw) # calculates the amount of degree to be turned
+        if poorata > 0: # kui kraadid on negatiivsed, pöörab vasakule, kui positiivsed pöörab paremale - if degrees are negative, turns left; if degrees positive, turns right
+            motor_pair.move_tank(motor_pair.PAIR_1, speed, -int(speed*1.1))
+        else:
+            motor_pair.move_tank(motor_pair.PAIR_1, -speed, int(speed*1.1))
+    motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
+    time.sleep_ms(250) # stabiliseerib nt missiooni tegemiseks - stabilizes, for example: for solving missions
+
+def nupp(): # returns True, when one of the arrow buttons pressed
+    return button.pressed(button.LEFT) or button.pressed(button.RIGHT)
+
+async def main():
+    #resets the gyro for start
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
+    light_matrix.write("?")
+    #Here begins the mission code
+    await turn(113)
+    while True:
+        if color_sensor.color(port.B) == color.GREEN:
+            light.color(light.POWER, color.GREEN)
+            light.color(light.CONNECT, color.GREEN)
+        elif color_sensor.color(port.B) == color.AZURE:
+            light.color(light.POWER, color.AZURE)
+            light.color(light.CONNECT, color.AZURE)
+        elif color_sensor.color(port.B) == color.YELLOW:
+            light.color(light.POWER, color.YELLOW)
+            light.color(light.CONNECT, color.YELLOW)
+        elif color_sensor.color(port.B) == color.MAGENTA:
+            light.color(light.POWER, color.MAGENTA)
+            light.color(light.CONNECT, color.MAGENTA)
+        elif color_sensor.color(port.B) == color.RED:
+            light.color(light.POWER, color.RED)
+            light.color(light.CONNECT, color.RED)
+        elif color_sensor.color(port.B) == color.WHITE:
+            light.color(light.POWER, color.WHITE)
+            light.color(light.CONNECT, color.WHITE)
+        if color_sensor.color(port.B) == color.UNKNOWN:
+            light.color(light.POWER, color.BLACK)
+            light.color(light.CONNECT, color.BLACK)
+            if abs(difference(0 - motor.absolute_position(port.E))) >= 2 or abs(difference(0 - motor.absolute_position(port.F))) >= 2:
+                motor.run_to_absolute_position(port.F, 0, 1050)
+                await motor.run_to_absolute_position(port.E, 0, 1050)
+            if nupp():
+                light_matrix.write(str(hub.temperature()))
+
+runloop.run(main())
