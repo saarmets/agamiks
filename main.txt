@@ -27,20 +27,7 @@ def yaw(): # returns yaw angle
 def relative(): # returns average relative travelled distance of both motors
     relative = int(((abs(motor.relative_position(port.C)))+(abs(motor.relative_position(port.D))))/2)
     return relative
-"""
-async def drive(cm, angle, maxspeed = 900):
-    motor.reset_relative_position(port.C, 0)
-    motor.reset_relative_position(port.D, 0)
-    distance = int(cm / wheel * 360)-round(maxspeed/70)
-    while relative() < distance:
-        curyaw = yaw()
-        togo = distance - relative()
-        speed = max(int(maxspeed*togo/distance*3), 350)
-        error = (difference(angle - curyaw))
-        correction = min(90, max(-90, error))
-        motor_pair.move(motor_pair.PAIR_1, correction, velocity= speed, acceleration= 950)
-    motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
-    """
+
 #Gyro forward drive in cm
 async def drive(cm, angle, maxspeed = 900): # takes inputs: distance (cm), direction (from -180 to 180)
     motor.reset_relative_position(port.C, 0) #resets motors for distance measuring
@@ -79,28 +66,37 @@ async def turn(angle, maxspeed = 1110):
     motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
     time.sleep_ms(250)
 
-"""
-#Gyro turning
-async def turn(angle): # takes input: wished angle (-180 to 180)
-    start_time = time.ticks_ms()
-    while abs(yaw() - angle) > 1: # turns until wished angle is reached
-        elapsed_time = time.ticks_diff(time.ticks_ms(), start_time) / 1000
-        curyaw = yaw()
-        error = difference(angle - curyaw) # calculates the amount of degree to be turned
-        speed = calculate_speed(error)
-        if error > 0: # kui kraadid on negatiivsed, pöörab vasakule, kui positiivsed pöörab paremale - if degrees are negative, turns left; if degrees positive, turns right
-            motor_pair.move_tank(motor_pair.PAIR_1, speed, -int(speed*1.05))
-        else:
-            motor_pair.move_tank(motor_pair.PAIR_1, -int(speed*1.05), speed)
-        time.sleep_ms(10)
-        linegraph.plot(color.RED, elapsed_time, speed)
-        linegraph.plot(color.BLUE, elapsed_time, error)
-    motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
-    time.sleep_ms(250) # stabiliseerib nt missiooni tegemiseks - stabilizes, for example: for solving missions
-    linegraph.show(True
-"""
-
 async def bluerun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def redrun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def yellowrun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def greenrun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def purplerun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def azurerun():
+    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
+    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    await turn(50)
+
+async def orangerun():
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
     await turn(50)
@@ -116,7 +112,7 @@ async def main():
     last_color = color.UNKNOWN
     color_actions = {
         color.BLUE: bluerun,
-        #color.RED: redrun,# Add other colors as needed
+        color.RED: redrun,# Add other colors as needed
     }
     #Here begins the mission code
     while True:
