@@ -1,4 +1,4 @@
-from hub import motion_sensor, port, button, light_matrix, light
+from hub import motion_sensor, port, button, light_matrix, light, sound
 import motor, runloop, motor_pair, color_sensor, color, time
 from app import linegraph
 
@@ -13,6 +13,7 @@ motor.reset_relative_position(port.C, 0)
 MIN_TURN = 100
 
 wheel = 15.5 #cm (wheel circumference)
+wheelbase = 10.5 #cm (distance between tires)
 
 def difference(difference): # Calculates shortest way to wanted angle
     while difference > 180:
@@ -29,22 +30,26 @@ def relative(): # returns average relative travelled distance of both motors
     return relative
 
 #Gyro forward drive in cm
-async def drive(cm, angle, maxspeed = 900): # takes inputs: distance (cm), direction (from -180 to 180)
+async def drive(cm, angle, maxspeed = 1110): # takes inputs: distance (cm), direction (from -180 to 180)
     motor.reset_relative_position(port.C, 0) #resets motors for distance measuring
     motor.reset_relative_position(port.D, 0)
     reverse = cm < 0
+    if abs(cm) < 15: maxspeed = 600 
     distance = int(abs(cm) / wheel * 360)-round(maxspeed/70) # converts distance in centimeters to motor degrees
-    print(distance)
-    gain = 8
+    Kp = 8.5
+    Ki = 0.005
+    I = 0
     while abs(relative()) < distance: # drives until distance reached
         curyaw = yaw()
         togo = distance - abs(relative())
-        error = (difference(angle - curyaw))*gain # calculates difference between wished and current angle
-        speed = max(int(maxspeed*togo/distance*2), 150)
+        error = (difference(angle - curyaw)) # calculates difference between wished and current angle
+        I += error
+        correction = round(error * Kp + I * Ki)
+        speed = max(int(maxspeed*togo/distance*2), 200)
         if reverse:
-            motor_pair.move_tank(motor_pair.PAIR_1, -speed+error, -speed-error, acceleration=980) # corrects the run according to calculations, but drives in reverse
+            motor_pair.move_tank(motor_pair.PAIR_1, -speed+correction, -speed-correction, acceleration=980) # corrects the run according to calculations, but drives in reverse
         else:
-            motor_pair.move_tank(motor_pair.PAIR_1, speed+error, speed-error, acceleration=980) # corrects the run according to calculations
+            motor_pair.move_tank(motor_pair.PAIR_1, speed+correction, speed-correction, acceleration=980) # corrects the run according to calculations
     motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
 
 async def turn(angle, maxspeed = 1110):
@@ -67,39 +72,97 @@ async def turn(angle, maxspeed = 1110):
     time.sleep_ms(250)
 
 async def bluerun():
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
+    await turn(-35)
+    await drive(35,-35)
+    await turn(5)
+    await drive(12, 5)
+    await turn(-15)
+    await drive(18, -15)
+    await turn(-30)
+    await turn(-15)
+    await drive(-5, -5, 500)
+    await turn(20)
+    await motor.run_for_degrees(port.F, 320, 1050, deceleration= 950)
+    await turn(35)
+    await drive(-4, 35, 300)
+    motor.run_for_degrees(port.F, 80, 1050, deceleration= 950)
     await turn(50)
+    motor.run_for_degrees(port.F, 180, -1050, deceleration= 950)
+    await drive(4,55, 400)
+    await turn(34)
+    await drive(13, 34)
+    await drive(-4, 32, 400)
+    motor.run_for_degrees(port.F, 180, 1050, deceleration= 950)
+    motor.run_for_degrees(port.E, 380, 1050, deceleration= 950)
+    await turn(10)
+    await drive(-38, 10)
+    await turn(135)
+    await drive(-30, 135)
+    await drive(45, 135)
 
 async def redrun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
     await turn(50)
 
 async def yellowrun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
     await turn(50)
 
 async def greenrun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
     await turn(50)
 
-async def purplerun():
+async def magentarun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
+    await drive(150, 0)
+    await drive(-150, 0)
 
 async def azurerun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
     await turn(50)
 
-async def orangerun():
+async def blackrun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
+    await drive(10, 0)
+    await turn(25)
+    await drive(15, 25)
+    await turn(10)
+    await drive(10, 10)
+    await turn(30)
+    await drive(30, 30)
+    await turn(50)
+    await drive(25, 50)
+    await turn(25)
+    await turn(105) # Turn away from angelrfish and drive to sonar
+    await drive(20, 105)
+    await turn(165)
+    await drive(25, 165) 
+    motor.run_for_degrees(port.F, 400, 300, acceleration= 950, deceleration= 950)
+async def whiterun():
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(1000)
     motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
+    await drive(150, 0)
+    await drive(-150, 0)
 
 def nupp(): # returns True, when one of the arrow buttons pressed
     return button.pressed(button.LEFT) or button.pressed(button.RIGHT)
@@ -112,10 +175,15 @@ async def main():
     last_color = color.UNKNOWN
     color_actions = {
         color.BLUE: bluerun,
-        color.RED: redrun,# Add other colors as needed
+        color.RED: redrun,
+        color.GREEN: greenrun,
+        color.YELLOW: yellowrun,
+        color.AZURE: azurerun,
+        color.MAGENTA: magentarun,
+        color.BLACK: blackrun,
+        color.WHITE: whiterun# Add other colors as needed
     }
-    #Here begins the mission code
-    while True:
+    while True: 
         current_color = color_sensor.color(port.B)
         # Check if color changed
         if current_color != last_color:
@@ -130,6 +198,7 @@ async def main():
 
         # Trigger action if button is pressed and color is detected
         if nupp() and current_color in color_actions:
+            sound.beep(440, 300)
             await color_actions[current_color]()# Trigger the corresponding action
 
         # Handle UNKNOWN color (if needed)
