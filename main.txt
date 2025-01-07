@@ -1,10 +1,10 @@
 from hub import motion_sensor, port, button, light_matrix, light, sound
 import motor, runloop, motor_pair, color_sensor, color, time
-from app import linegraph
+#from app import linegraph  # muidu ei tööta bluetoothita
 
 motor_pair.pair(motor_pair.PAIR_1, port.C,port.D) # Pairs motors
 
-linegraph.clear_all()
+#linegraph.clear_all()
 
 # Gyro and wheel motor
 motion_sensor.reset_yaw(0)
@@ -105,23 +105,47 @@ async def bluerun():
 async def redrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(1000)
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
+    await drive(10, 0)
+    await turn(-40)
+    await drive(30, -40)
+    await turn(0)
+    await drive(23, 0)
+    await turn(-45)
+    await drive(13, -45)
+    await motor.run_for_degrees(port.E, -300, 1050, deceleration= 950)
+    await motor.run_for_degrees(port.E, 300, 1050, deceleration= 950)
+    await drive(-20, -45)
 
 async def yellowrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(1000)
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
+    motor.run_for_degrees(port.E, 150, 300, acceleration= 950, deceleration= 950)
+    await turn(-60)
+    await drive(50, -60)
+    await turn(0, 300)
+    await drive(20, 0, 300)
+    await drive(-10, 0)
+    await turn(90)
+    await drive(-50, 90)
+    await motor.run_for_degrees(port.E, -400, 300, acceleration= 950, deceleration= 950)
+    await motor.run_for_degrees(port.E, 200, 300, acceleration= 950, deceleration= 950)
+    await drive(55, 90)
+    await turn(120)
+    await drive(40, 120)
 
 async def greenrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(1000)
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
+    await turn(45)
+    await drive(45, 45)
+    await turn(0)
+    await drive(28, 0)
+    await turn(-90)
+    await drive(10, -90)
+    await motor.run_for_degrees(port.F, 900, -600, acceleration= 950, deceleration= 950)
+    await drive(-10,-90)
+    await turn(-155)
+    await drive(60, -155)
 
 async def magentarun():
     motion_sensor.reset_yaw(0)
@@ -140,29 +164,52 @@ async def azurerun():
 
 async def blackrun():
     motion_sensor.reset_yaw(0)
+    motor.reset_relative_position(port.F, 0)
+    motor.reset_relative_position(port.E, 0)
     time.sleep_ms(1000)
-    await drive(10, 0)
-    await turn(25)
-    await drive(15, 25)
+    motor.run_for_degrees(port.E, 200, -600, acceleration= 950, deceleration= 950)
+    await drive(10, 0) # Drive from base
+    await turn(35)
+    await drive(15, 35) # Drive to crab cage
     await turn(10)
     await drive(10, 10)
-    await turn(30)
-    await drive(30, 30)
-    await turn(50)
-    await drive(25, 50)
-    await turn(25)
-    await turn(105) # Turn away from angelrfish and drive to sonar
-    await drive(20, 105)
-    await turn(165)
-    await drive(25, 165) 
-    motor.run_for_degrees(port.F, 400, 300, acceleration= 950, deceleration= 950)
+    await turn(35)
+    await drive(30, 35)
+    await turn(-10)
+    await turn(45)
+    await drive(25, 45)
+    await turn(37)
+    await drive(5, 37)
+    await turn(135) # Turn away from angelrfish and drive to sonar
+    await drive(30, 135) # Drive to sonar
+    await motor.run_for_degrees(port.F, 700, -600, acceleration= 950, deceleration= 950)
+    await drive(-10, 135)
+    motor.run_to_relative_position(port.F, 0, -600, acceleration= 950, deceleration= 950)
+    #await turn(64)
+    #await drive(5, 64)
+    #await motor.run_for_degrees(port.E, 150, 600, acceleration= 950, deceleration= 950)
+    #await drive(5, 64)
+    #await motor.run_for_degrees(port.E, 200, -600, acceleration= 950, deceleration= 950)
+    #await drive(-10, 64)
+    #await turn(0)
+    #await drive(50, 0)
+    #await turn(-60)
+    #await drive(40, -60) 
+     
+    
 async def whiterun():
     motion_sensor.reset_yaw(0)
+    motor.reset_relative_position(port.F, 0)
+    motor.reset_relative_position(port.E, 0)
     time.sleep_ms(1000)
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await drive(150, 0)
-    await drive(-150, 0)
+    motor.run_to_relative_position(port.F, 50, 300, acceleration= 950, deceleration= 950)
+    await drive(25, 0)
+    await motor.run_to_relative_position(port.F, 0, 300, acceleration= 950, deceleration= 950)
+    await drive(-4, 0)
+    motor.run_to_relative_position(port.F, 40, 1050, acceleration= 950, deceleration= 950)
+    await drive(-45, 0)
+    #await drive(150, 0)
+    #await drive(-150, 0)
 
 def nupp(): # returns True, when one of the arrow buttons pressed
     return button.pressed(button.LEFT) or button.pressed(button.RIGHT)
