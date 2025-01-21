@@ -119,11 +119,11 @@ async def redrun():
 async def yellowrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(1000)
-    motor.run_for_degrees(port.E, 150, 300, acceleration= 950, deceleration= 950)
-    await turn(-60)
-    await drive(50, -60)
+    motor.run_for_degrees(port.E, 250, 300, acceleration= 950, deceleration= 950)
+    await turn(-65)
+    await drive(57, -65)
     await turn(0, 300)
-    await drive(20, 0, 300)
+    await drive(25, 0, 200)
     await drive(-10, 0)
     await turn(90)
     await drive(-50, 90)
@@ -131,7 +131,8 @@ async def yellowrun():
     await motor.run_for_degrees(port.E, 200, 300, acceleration= 950, deceleration= 950)
     await drive(55, 90)
     await turn(120)
-    await drive(40, 120)
+    await drive(35, 120)
+    await turn(180)
 
 async def greenrun():
     motion_sensor.reset_yaw(0)
