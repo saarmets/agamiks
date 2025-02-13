@@ -17,7 +17,7 @@ import motor, runloop, motor_pair, color_sensor, color, time
 motor_pair.pair(motor_pair.PAIR_1, port.C,port.D) # Pairs motors
 
 MIN_TURN = 100
-MIN_DRIVE = 200
+MIN_DRIVE = 250
 
 wheel = 15.5 #cm (wheel circumference)
 
@@ -36,19 +36,20 @@ def relative(): # returns average relative travelled distance of both motors
     return relative
 
 # Proportional Integral forward drive function
-async def drive(cm, angle, maxspeed = 1000, inertia = 70): # takes inputs: distance (cm), direction (from -180 to 180) and optional speedcap
+async def drive(cm, angle, maxspeed = 1110, inertia = 65): # takes inputs: distance (cm), direction (from -180 to 180) and optional speedcap
     motor.reset_relative_position(port.C, 0) #resets motors for distance measuring
     motor.reset_relative_position(port.D, 0)
     reverse = cm < 0
     if abs(cm) < 15: maxspeed = 600 # limited speed for short distances to improve distance accuracy
     distance = int(abs(cm) / wheel * 360)-round(maxspeed/inertia) # converts distance in centimeters to motor degrees and deducts predicted inertia
-    Kp, Ki = 8.5, 0.005
+    Kp, Ki = 8.5, 0.0005
+    print(distance)
     I = 0
     while abs(relative()) < distance: # drives until distance reached
         curyaw = yaw()
         togo = distance - abs(relative())
         error = (difference(angle - curyaw)) # calculates difference between wished and current angle
-        I += error
+        #I += error
         correction = round(error * Kp + I * Ki) # correction calculation by the PI controller
         speed = max(int(maxspeed*togo/distance*2), MIN_DRIVE) # proportional speed to distance to combat the chonky robot's inertia
         if reverse:
@@ -68,6 +69,8 @@ async def turn(angle, maxspeed = 1110, temper = 1.0):
         P = difference(angle - curyaw) # calculates difference between wished and current angle for proportional correction
         I += P*delay
         D = (P - last)/delay
+        if P * last < 0: # reset integral if error changes sign (to prevent windup)
+            I = 0
         speed = max(MIN_TURN, min(maxspeed, round(abs(P*Kp) + I*Ki + D*Kd))) # PID controlled turning speed for extremely precise turns
         if P > 0: # if degrees are negative, turns left; if degrees positive, turns right
             motor_pair.move_tank(motor_pair.PAIR_1, speed, -int(speed*1.06)) # hub is offset from the axle, so the inner wheel is sped up to avoid arc turning
@@ -93,14 +96,13 @@ async def redrun():
     await turn(-40)
     await drive(30, -40)
     await turn(0)
-    await drive(29, 0)
+    await drive(32, 0)
     await turn(-45)
     await drive(15, -45)
-    await drive(-1, -45)
+    await turn(-45)
     await motor.run_for_degrees(port.E, -750, 1050)
-    motor.run_for_degrees(port.F, 150, 1050)
-    await motor.run_for_degrees(port.E, -150, 500)
-    motor.run_for_degrees(port.E, -350, 125)
+    await motor.run_for_degrees(port.E, -450, 1050)
+    motor.run_for_degrees(port.E, 450, 700)
     await drive(-15, -45, 200)
     await turn(-10)
     await drive(-65, -10)
@@ -109,35 +111,37 @@ async def yellowrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(500)
     motor.run_for_degrees(port.E, 150, 1000)
-    await drive(60, 0)
+    await drive(61.5, 0)
     motor.run_for_degrees(port.F, -200, 1000)
     await turn(90)
-    await drive(13, 90, 300)
+    await drive(10, 90, 300)
     motor.run_for_degrees(port.F, 120, 600)
-    await drive(10, 90, 400)
+    await drive(10, 90, 300)
     await motor.run_for_degrees(port.F, -150, 400)
-    await drive(-15.5, 90, 500)
+    await drive(-14, 90, 400)
     await turn(180)
     await motor.run_for_degrees(port.F, 200, 1000)
-    motor.run_for_degrees(port.E, 100, 1000)
-    await drive(-50, 180)
+    motor.run_for_degrees(port.E, 200, 1000)
+    await drive(-48, 180)
     await motor.run_for_degrees(port.E, -1200, 1000)
     await motor.run_for_degrees(port.E,  300, 1000)
     motor.run_for_degrees(port.E,500, 1000)
-    await drive(100, -170)
+    await drive(70, -180)
+    await turn(-155)
+    await drive(30, -155)
 
 
 async def greenrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(500)
     await turn(45)
-    await drive(45, 45)
+    await drive(50.5, 45)
     await turn(0)
     await drive(33, 0)
     await turn(-90)
-    await drive(8, -90)
+    await drive(5, -90)
     await motor.run_for_degrees(port.F, 900, -600, acceleration= 950, deceleration= 950)
-    await drive(-10,-90)
+    await drive(-12,-90)
     await turn(-155)
     await drive(60, -155)
 
@@ -146,9 +150,9 @@ async def magentarun():
     time.sleep_ms(500)
     await drive(15, 0)
     await turn(-25, 1110, 0.9)
-    await drive(50, -25, 900)
-    await turn(45, 1110, 0.9)
-    await drive(22, 43, 600)
+    await drive(51, -25, 900)
+    await turn(44, 1110, 0.9)
+    await drive(23.5, 43, 600)
     await turn(45)
     await motor.run_for_degrees(port.F, 350, 1050)
     time.sleep_ms(300)
@@ -176,39 +180,39 @@ async def blackrun():
     motor.reset_relative_position(port.F, 0)
     motor.reset_relative_position(port.E, 0)
     time.sleep_ms(500)
-    await drive(12, 0) # Drive to unknown creature and push it then drive back to base
+    await drive(14, 0) # Drive to unknown creature and push it then drive back to base
     motor.run_for_degrees(port.F, 550, 1050)
     await turn(-45, 700)
-    await drive(40, -45)
-    await drive(-23, -45)
+    await drive(39, -45, 1110)
+    await drive(-21, -45)
     await turn(0, 700)
     await motor.run_for_degrees(port.F, 350, -1050)
-    motor.run_for_degrees(port.F, 700, 250)
-    await drive(31, 0)
+    motor.run_for_degrees(port.F, 700, 200)
+    await drive(32, 0)
     await motor.run_for_degrees(port.F, 1090, 1050)
     await motor.run_for_degrees(port.F, 350, -1050)
-    await turn(-15)
+    await turn(-10)
     await motor.run_for_degrees(port.F, 550, 1050)
-    await drive(3, -15, 600)
+    await drive(3, -10, 500)
     await turn(-65)
     motor.run_for_degrees(port.F, 1000, -1050)
-    await drive(20, -65, 350)
+    await drive(17, -65, 350)
     await turn(-80)
-    motor.run_for_degrees(port.F, 550, -1050)
+    motor.run_for_degrees(port.F, 400, -1050)
     await drive(45, -80)
-    await drive(-3, -80)
-    await motor.run_for_degrees(port.F, 700, 1050)
+    await drive(-3, -57)
+    await motor.run_for_degrees(port.F, 400, 1050)
     await drive(5.5, -80)
-    await motor.run_for_degrees(port.F, 700, 1050)
+    await motor.run_for_degrees(port.F, 1000, 1050)
     motor.run_for_degrees(port.F, 150, -1050)
     await turn(-90)
-    await drive(24, -90, 700)
+    await drive(25, -90, 700)
     await drive(-0.5, -90)
     await motor.run_for_degrees(port.F, 1100, -1050)
-    await drive(15, -90)
-    await turn(-135)
+    await drive(25, -90)
+    await turn(-145)
     motor.run_for_degrees(port.F, 600, 600)
-    await drive(80, -135)
+    await drive(80, -145)
 
 async def whiterun():
     motion_sensor.reset_yaw(0)
@@ -226,7 +230,9 @@ async def whiterun():
     motor.run_for_degrees(port.E, 100, 1050)
     await drive(18, -45)
     await turn(0)
-    await drive(110, 0)
+    await drive(80, 0)
+    await turn(45)
+    await drive(30, 45)
 
 def nupp(): # returns True, when one of the arrow buttons pressed
     return button.pressed(button.LEFT) or button.pressed(button.RIGHT)
