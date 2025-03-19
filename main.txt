@@ -3,7 +3,7 @@ SPIKE 3 Python Code for FIRST LEGO League Team 'Aga Miks?'
 
 This program controls the Agamiksmasin 2.0 for the FLL 2024-2025 SUBMERGED season.
 Features:
-    - Proportional-integral (PI) controlled drive function
+    - Proportional-integral-derivative (PID) controlled drive function
     - Proportional-integral-derivative (PID) controlled turn function
     - Color-based autonomous mission selection
     - Inertia compensation (robot adaptive version in works)
@@ -97,57 +97,47 @@ async def redrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(250)
     await drive(10, 0)
-    motor.run_for_degrees(port.E, 750, 1050, deceleration= 950)
     await turn(-40)
-    await drive(30, -40)
+    await drive(25, -40)
     await turn(0)
-    await drive(32, 0)
+    await drive(24, 0)
     await turn(-45)
-    await drive(15, -45)
-    await motor.run_for_degrees(port.E, -600, 1050)
-    motor.run_for_degrees(port.E, -50, 1050)
-    await drive(-1, -45, 200)
-    await motor.run_for_degrees(port.F, -450, 1050)
-    await motor.run_for_degrees(port.E, 800, 1050)
-    motor.run_for_degrees(port.E, 200, 1050)
-    await drive(-15, -45, 200)
+    await drive(12, -45)
+    await motor.run_for_degrees(port.E, 500, 1050)
+    await drive(-15, -45, 100)
     await turn(-10)
     await drive(-65, -10)
 
 async def yellowrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(250)
-    motor.run_for_degrees(port.E, -150, 1000)
-    await drive(61.5, 0)
-    motor.run_for_degrees(port.F, -200, 1000)
-    await turn(90)
-    await drive(10, 90, 300)
-    motor.run_for_degrees(port.F, 120, 600)
-    await drive(10, 90, 200)
-    await motor.run_for_degrees(port.F, -150, 400)
-    await drive(-14, 90, 400)
-    await turn(180)
-    await motor.run_for_degrees(port.F, 200, 1000)
-    motor.run_for_degrees(port.E, -200, 1000)
-    await drive(-48, 180)
-    await motor.run_for_degrees(port.E, 1800, 1000)
-    await motor.run_for_degrees(port.E,  -300, 1000)
-    motor.run_for_degrees(port.E,-500, 1000)
-    await drive(50, -180)
-    await turn(-155)
-    await drive(40, -155)
+    await drive(59.5, 0) # Drive out of base
+    await turn(90) # Turn to mission "Raise the mast"
+    await drive(8, 90, 300) # Raise the mast
+    motor.run_for_degrees(port.F, 300, -600) # Lower arm to collect krill
+    await drive(10, 90, 200) # Get kraken's treasure
+    time.sleep_ms(250)
+    await drive(-10, 90, 400) # Drive out of the kraken, hopefully we have the treasure and the mast is raised
+    await turn(180) # Turn backwards towards the coral nursey to put scuba diver on stick and flip the corals
+    await motor.run_for_degrees(port.F, 300, 1000) # Raise the arm that collected the krill, krill should be in base
+    await drive(-48, 180) # Drive backwards toward coral nursery
+    await motor.run_for_degrees(port.E, 300, -1000 ) # Put away the scuba diver and flip the corals
+    await motor.run_for_degrees(port.E, 150, 1000) # Raise the arm that flipped the corals
+    await drive(50, -180, 1100, 1100) # Drive back to base
+    await drive(40, -150, 1100, 1100)
 
 
 async def greenrun():
     motion_sensor.reset_yaw(0)
     time.sleep_ms(250)
+    await drive(10, 0)
     await turn(45, 900, 0.9)
-    await drive(49, 45, 800)
+    await drive(25, 45, 800)
     await turn(0, 900, 0.9)
-    await drive(33, 0, 800)
+    await drive(38, 0, 800)
     await turn(-90, 900, 0.9)
     await drive(6, -90, 800)
-    await motor.run_for_degrees(port.F, 900, -600, acceleration= 950, deceleration= 950)
+    await motor.run_for_degrees(port.F, 360, -600, acceleration= 950, deceleration= 950)
     await drive(-12,-90, 800)
     await turn(-155, 900, 0.9)
     await drive(60, -155, 800)
@@ -157,23 +147,18 @@ async def magentarun():
     time.sleep_ms(500)
     await drive(15, 0)
     await turn(-25, 1110, 0.9)
-    await drive(51, -25, 900)
-    await turn(42, 1110, 0.9)
-    await drive(20, 42)
-    await motor.run_for_degrees(port.F, 350, 1050)
-    time.sleep_ms(300)
-    motor.run_for_degrees(port.F, -350, 1050)
+    await drive(49, -25, 900)
+    await turn(44, 1110, 0.9)
+    await drive(19, 44, 800)
+    await motor.run_for_degrees(port.F, 500, 1050)
     await turn(45)
-    await drive(-20, 45, 900)
+    await drive(-18, 45, 900)
     await turn(120, 1110, 0.9)
     await drive(-47, 120, 900)
-    await motor.run_for_degrees(port.E, -800, 800)
+    await motor.run_for_degrees(port.E, -1200, 1050)
     await drive(-13, 135)
-    time.sleep_ms(750)
+    time.sleep_ms(1000)
     await drive(5, 135)
-    for _ in range(5):
-        await motor.run_for_degrees(port.F, 350, 1050)
-        await motor.run_for_degrees(port.F, -350, 1050)
 
 async def azurerun():
     motion_sensor.reset_yaw(0)
@@ -187,39 +172,49 @@ async def blackrun():
     motor.reset_relative_position(port.F, 0)
     motor.reset_relative_position(port.E, 0)
     time.sleep_ms(250)
-    await drive(15, 0) # Drive to unknown creature and push it then drive back to base
-    motor.run_for_degrees(port.F, 550, 1050)
+    await drive(13, 0) # Drive to unknown creature and push it then drive back to base
+    motor.run_for_degrees(port.F, 700, 1050)
     await turn(-45, 700)
-    await drive(37, -45, 1110)
-    await drive(-21, -45)
-    await turn(0, 700)
-    await motor.run_for_degrees(port.F, 350, -1050)
-    motor.run_for_degrees(port.F, 700, 200)
-    await drive(30, 0)
-    await motor.run_for_degrees(port.F, 1000, 1050)
-    await motor.run_for_degrees(port.F, 350, -1050)
-    await turn(-10)
-    await motor.run_for_degrees(port.F, 550, 1050)
-    await drive(4, -10, 500)
-    await turn(-64)
-    motor.run_for_degrees(port.F, 1000, -1000)
-    await drive(18, -64, 350)
-    await turn(-80)
-    motor.run_for_degrees(port.F, 350, -1050)
-    await drive(46, -80)
+    await drive(32, -45, 1110)#pushing
+    await drive(-15, -45)#reverse
+    await turn(0, 700)#original direction
+    await motor.run_for_degrees(port.F, 400, -1050)
+    await drive(32, 0)#to the plankton sample
+    motor.run_for_degrees(port.F, 400, 1050)
+    await motor.run_for_degrees(port.F, 1300, 1050)
+    await motor.run_for_degrees(port.F, 900, -1050)
+    await drive(10, 0)
+    await turn(-72)
+    await motor.run_for_degrees(port.F, 200, 1050)
+    await drive(23, -72)
+    await turn(-87)
+    await drive(41, -87)
+    await motor.run_for_degrees(port.F, 200, 1050)
+    await turn(-72)
+    await drive(5, -72)
+    await motor.run_for_degrees(port.F, 500, 1050)
+    await drive(4, -72)
+    await turn(-90)
+    await motor.run_for_degrees(port.F, 800, -1050)
+    await drive(35, -90)
+    await turn(-140)
+    await drive(70, -140, 1110, 800)
+    """
+    await drive(45, -80)
     await drive(-3, -80)
-    motor.run_for_degrees(port.F, 350, 1050)
-    await drive(9, -80)
+    motor.run_for_degrees(port.F, 450, 1050)
+    await drive(4, -80)
     await motor.run_for_degrees(port.F, 1000, 1050)
     motor.run_for_degrees(port.F, 150, -300)
+    await drive(3, -80)
     await turn(-90)
     await drive(25, -90, 700)
     await drive(-0.5, -90)
     await motor.run_for_degrees(port.F, 1100, -1050)
-    await drive(25, -90)
+    await drive(23, -90)
     await turn(-145)
     motor.run_for_degrees(port.F, 600, 600)
-    await drive(70, -145)
+    await drive(70, -145)"""
 
 async def whiterun():
     motion_sensor.reset_yaw(0)
@@ -229,17 +224,19 @@ async def whiterun():
     motor.run_for_degrees(port.F, 100, -400, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.E, 250, 1050)
     await drive(92, 0) # Drive the boat to destination
+    await motor.run_for_degrees(port.F, 500, 800)
+    await motor.run_for_degrees(port.F, 500, -400)
     await motor.run_for_degrees(port.E, 250, -1050)
     motor.run_for_degrees(port.E, 150, -1050)
-    await drive(-21, 0, 600)
+    await drive(-45, 0)
     await motor.run_for_degrees(port.E, 200, 1050)
     await turn(-45, 1110, 1.2)
     motor.run_for_degrees(port.E, 100, 1050)
-    await drive(18, -45)
+    await drive(25, -45)
     await turn(0)
-    await drive(50, 0)
+    await drive(60, 0)
     await turn(30)
-    await drive(40, 30)
+    await drive(45, 30)
 
 def nupp(): # returns True, when one of the arrow buttons pressed
     return button.pressed(button.LEFT) or button.pressed(button.RIGHT)

@@ -1,10 +1,10 @@
 Agamiksmasin 2.0 - FLL 2024-2025 SUBMERGED
 
-This repository contains the Python code for controlling the Agamiksmasin 2.0, a LEGO SPIKE Prime robot built for the FIRST LEGO League (FLL) 2024-2025 SUBMERGED season by team "Aga Miks?". The code features advanced control algorithms, including Proportional-Integral (PI) and Proportional-Integral-Derivative (PID) controllers, for precise movement and mission execution.
+This repository contains the Python code for controlling the Agamiksmasin 2.0, a LEGO SPIKE Prime robot built for the FIRST LEGO League (FLL) 2024-2025 SUBMERGED season by team "Aga Miks?". The code features advanced control algorithms, including Proportional-Integral-Derivative (PID) controllers, for precise movement and mission execution.
 
 Features:
 
-    PI-Controlled Drive Function: Ensures accurate straight-line movement with angle correction.
+    PID-Controlled Drive Function: Ensures accurate straight-line movement with angle correction.
 
     PID-Controlled Turn Function: Provides precise turning with minimal overshoot.
 
