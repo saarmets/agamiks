@@ -3,8 +3,7 @@ SPIKE 3 Python Code for FIRST LEGO League Team 'Aga Miks?'
 
 This program controls the Agamiksmasin 2.0 for the FLL 2024-2025 SUBMERGED season.
 Features:
-    - Proportional-integral-derivative (PID) controlled drive function
-    - Proportional-integral-derivative (PID) controlled turn function
+    - Proportional-integral-derivative (PID) controlled drive and turn function
     - Color-based autonomous mission selection
     - Inertia compensation (robot adaptive version in works)
 
@@ -18,31 +17,64 @@ motor_pair.pair(motor_pair.PAIR_1, port.C,port.D) # Pairs motors
 
 MIN_TURN = 100
 
-wheel = 15.5 #cm (wheel circumference)
+WHEEL = 15.5 #cm (wheel circumference)
 
-def difference(difference): # Calculates shortest way to wanted angle
-    while difference > 180:
-        difference -= 360
-    while difference < -180:
-        difference += 360
-    return difference
+def difference(angle_difference):
+    """Calculates shortest way to wanted angle.
 
-def yaw(): # returns yaw angle in same format as app
+    Args:
+        difference (float): Initial angle difference.
+
+    Returns:
+        float: Adjusted angle difference in the range of -180 to 180 degrees.
+    """
+    while angle_difference > 180:
+        angle_difference -= 360
+    while angle_difference < -180:
+        angle_difference += 360
+    return angle_difference
+
+def yaw():
+    """
+    Retrieve the robot's yaw angle in app-like format.
+
+    Returns:
+        int: Yaw angle after scaling.
+    """
     return round(motion_sensor.tilt_angles()[0]*-0.1)
 
-def relative(): # returns average relative travelled distance of both motors
+def relative():
+    """
+    Calculate the average traveled distance using both motors.
+
+    Returns:
+        int: Average of the absolute relative positions of motors on ports C and D.
+    """
     relative = int(((abs(motor.relative_position(port.C)))+(abs(motor.relative_position(port.D))))/2)
     return relative
 
-# Proportional Integral forward drive function
-async def drive(cm, angle, maxspeed = 1110, minspeed = 200, inertia = 65): # takes inputs: distance (cm), direction (from -180 to 180) and optional speedcap
+async def drive(cm, angle, maxspeed = 1110, minspeed = 200, inertia = 65):
+    """
+    Proportional-Integral-Derivative (PID) controlled forward drive function.
+
+    Drives the robot a specific distance while maintaining a target angle 
+    using PID-based error correction and dynamic speed control, takes inertia in to account.
+
+    Args:
+        cm (int): Target distance to drive in centimeters.
+        angle (int): Target yaw angle to maintain (range -180 to 180).
+        maxspeed (int, optional): Maximum speed (default: 1110).
+        minspeed (int, optional): Minimum speed to prevent stalling (default: 200).
+        inertia (int, optional): Factor to account for robot's inertia (default: 65).
+    """
     motor.reset_relative_position(port.C, 0) #resets motors for distance measuring
     motor.reset_relative_position(port.D, 0)
     reverse = cm < 0
     if abs(cm) < 15: maxspeed = 850 # limited speed for short distances to improve distance accuracy
-    distance = int(abs(cm) / wheel * 360)-round(maxspeed/inertia) # converts distance in centimeters to motor degrees and deducts predicted inertia
+    distance = int(abs(cm) / WHEEL * 360)-round(maxspeed/inertia) # converts distance in centimeters to motor degrees and deducts predicted inertia
     Kp, Ki, Kd = 4.5, 0.001, 1.2
     I, last = 0, 0 
+
     while abs(relative()) < distance: # drives until distance reached
         curyaw = yaw()
         togo = distance - abs(relative())
@@ -62,13 +94,24 @@ async def drive(cm, angle, maxspeed = 1110, minspeed = 200, inertia = 65): # tak
         speed = min(max(int(maxspeed*togo/distance*2), minspeed), maxspeed) # proportional speed to distance to combat the chonky robot's inertia
         motor_pair.move(motor_pair.PAIR_1, steering, velocity=speed if not reverse else -speed, acceleration = 900) # corrects the run according to calculations
     motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
-    time.sleep_ms(25)
+    time.sleep_ms(30)
 
-# Proportional–integral–derivative controlled turn function
 async def turn(angle, maxspeed = 1110, temper = 1.0):
+    """
+    Proportional-Integral-Derivative (PID) controlled turn function.
+
+    Turns the robot to a specific yaw angle using a PID controller.
+    Includes dynamic speed adjustment based on angle error and inertia correction for heavy attachments.
+
+    Args:
+        angle (int): Target yaw angle to turn to (range -180 to 180).
+        maxspeed (int, optional): Maximum turning speed (default: 1110).
+        temper (float, optional): Multiplier to adjust PID constants for heavy attachments (default: 1.0).
+    """
     Kp, Ki, Kd = 4.5*temper, 0.001*temper, 1.2*temper # PID constants for turning, temper as a gain for heavy attachments
     P, I, D, last = 0, 0 , 0, 0
     delay = 5
+
     while abs(yaw() - angle) > 1:
         curyaw = yaw()
         P = difference(angle - curyaw) # calculates difference between wished and current angle for proportional correction
@@ -84,33 +127,73 @@ async def turn(angle, maxspeed = 1110, temper = 1.0):
         last = P
         time.sleep_ms(delay)
     motor_pair.stop(motor_pair.PAIR_1, stop = motor.SMART_BRAKE)
-    time.sleep_ms(50)
+    time.sleep_ms(75)
 
-async def bluerun():
+async def bluerun(): # I run: M13
     motion_sensor.reset_yaw(0)
-    time.sleep_ms(250)
-    await drive(34, 0)
-    await motor.run_for_degrees(port.E, -400, 1050)
-    await drive(-25, 0)
+    time.sleep_ms(150)
+    await drive(34, 0, 1110, 600)
+    await motor.run_for_degrees(port.E, -450, 1050)
+    await drive(-25, 0, 1110, 900)
 
-async def redrun():
+async def azurerun(): # II run: M14, M09
     motion_sensor.reset_yaw(0)
-    time.sleep_ms(250)
-    await drive(10, 0)
+    time.sleep_ms(150)
+    await drive(20, 0)
     await turn(-40)
-    await drive(25, -40)
+    await drive(13, -40)
     await turn(0)
     await drive(24, 0)
-    await turn(-45)
-    await drive(12, -45)
-    await motor.run_for_degrees(port.E, 500, 1050)
-    await drive(-15, -45, 100)
-    await turn(-10)
-    await drive(-65, -10)
+    await motor.run_for_degrees(port.F, 400, 1000)
+    await turn(-20)
+    await drive(-17, -20)
+    await turn(-75)
+    await drive(15, -75, 1110, 700)
+    time.sleep_ms(350)
+    await drive(-50, -50, 1110, 600)
 
-async def yellowrun():
+async def blackrun(): # III run: M05, M14
     motion_sensor.reset_yaw(0)
+    time.sleep_ms(100)
+    motor.reset_relative_position(port.F, 0)
+    motor.reset_relative_position(port.E, 0)
+    await drive(18, 0)
+    await turn(38, 700)
+    time.sleep_ms(100)
+    await drive(90, 38)
+    await turn(30)
+    await turn(38)
+    time.sleep_ms(100)
+    await drive(17, 38, 800)
+    await turn(90, 700)
+    await drive(8, 90)
+    await motor.run_for_degrees(port.F, 250, -400)
+    await drive(-4, 90, 500)
+    await turn(0)
+    await drive(30, 0, 900)
+    motor.run_for_degrees(port.E, -650, 1050)
+    await turn(-50)
+    await drive(65, -50, 1110, 900)
+
+async def greenrun(): # IV run: M01, M02, M04
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(150)
+    await drive(10, 0)
+    await turn(45, 900, 0.9)
+    await drive(25, 45, 800)
+    await turn(0, 900, 0.9)#Has manuevered out
+    await drive(40, 0, 800)
+    await turn(-90, 900, 0.9) #turns towards the coral sanctuary
+    await drive(6, -90, 800)
     time.sleep_ms(250)
+    await motor.run_for_degrees(port.F, 360, -600)#Catches the diver and launches shark
+    await drive(-12,-90, 800)
+    await turn(-145, 900, 0.9)
+    await drive(60, -145, 1110, 900)
+
+async def yellowrun(): # V run: M06, M07, M04, M03
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(150)
     await drive(59.5, 0) # Drive out of base
     await turn(90) # Turn to mission "Raise the mast"
     await drive(8, 90, 300) # Raise the mast
@@ -126,125 +209,65 @@ async def yellowrun():
     await drive(50, -180, 1100, 1100) # Drive back to base
     await drive(40, -150, 1100, 1100)
 
-
-async def greenrun():
+async def redrun(): # VI run: M02, M14
     motion_sensor.reset_yaw(0)
-    time.sleep_ms(250)
-    await drive(10, 0)
-    await turn(45, 900, 0.9)
-    await drive(25, 45, 800)
-    await turn(0, 900, 0.9)
-    await drive(38, 0, 800)
-    await turn(-90, 900, 0.9)
-    await drive(6, -90, 800)
-    await motor.run_for_degrees(port.F, 360, -600, acceleration= 950, deceleration= 950)
-    await drive(-12,-90, 800)
-    await turn(-155, 900, 0.9)
-    await drive(60, -155, 800)
+    time.sleep_ms(150)
+    await drive(58.5, 0)
+    await turn(-45)
+    await drive(16, -45)
+    await motor.run_for_degrees(port.E, 700, 1050)
+    await drive(-15, -45, 100)
+    await turn(-10)
+    await drive(-65, -10, 1110, 900)
 
-async def magentarun():
+async def whiterun(): # VII run: M15, M08
     motion_sensor.reset_yaw(0)
-    time.sleep_ms(500)
-    await drive(15, 0)
-    await turn(-25, 1110, 0.9)
-    await drive(49, -25, 900)
-    await turn(44, 1110, 0.9)
-    await drive(19, 44, 800)
-    await motor.run_for_degrees(port.F, 500, 1050)
-    await turn(45)
-    await drive(-18, 45, 900)
-    await turn(120, 1110, 0.9)
-    await drive(-47, 120, 900)
-    await motor.run_for_degrees(port.E, -1200, 1050)
-    await drive(-13, 135)
-    time.sleep_ms(1000)
-    await drive(5, 135)
-
-async def azurerun():
-    motion_sensor.reset_yaw(0)
-    time.sleep_ms(500)
-    motor.run_for_degrees(port.E, 1080, 300, acceleration= 950, deceleration= 950)
-    motor.run_for_degrees(port.F, 1080, 300, acceleration= 950, deceleration= 950)
-    await turn(50)
-
-async def blackrun():
-    motion_sensor.reset_yaw(0)
-    motor.reset_relative_position(port.F, 0)
-    motor.reset_relative_position(port.E, 0)
-    time.sleep_ms(250)
-    await drive(13, 0) # Drive to unknown creature and push it then drive back to base
-    motor.run_for_degrees(port.F, 700, 1050)
-    await turn(-45, 700)
-    await drive(32, -45, 1110)#pushing
-    await drive(-15, -45)#reverse
-    await turn(0, 700)#original direction
-    await motor.run_for_degrees(port.F, 400, -1050)
-    await drive(32, 0)#to the plankton sample
-    motor.run_for_degrees(port.F, 400, 1050)
-    await motor.run_for_degrees(port.F, 1300, 1050)
-    await motor.run_for_degrees(port.F, 900, -1050)
-    await drive(10, 0)
-    await turn(-72)
-    await motor.run_for_degrees(port.F, 200, 1050)
-    await drive(23, -72)
-    await turn(-87)
-    await drive(41, -87)
-    await motor.run_for_degrees(port.F, 200, 1050)
-    await turn(-72)
-    await drive(5, -72)
-    await motor.run_for_degrees(port.F, 500, 1050)
-    await drive(4, -72)
-    await turn(-90)
-    await motor.run_for_degrees(port.F, 800, -1050)
-    await drive(35, -90)
-    await turn(-140)
-    await drive(70, -140, 1110, 800)
-    """
-    await drive(45, -80)
-    await drive(-3, -80)
-    motor.run_for_degrees(port.F, 450, 1050)
-    await drive(4, -80)
-    await motor.run_for_degrees(port.F, 1000, 1050)
-    motor.run_for_degrees(port.F, 150, -300)
-    await drive(3, -80)
-    await turn(-90)
-    await drive(25, -90, 700)
-    await drive(-0.5, -90)
-    await motor.run_for_degrees(port.F, 1100, -1050)
-    await drive(23, -90)
-    await turn(-145)
-    motor.run_for_degrees(port.F, 600, 600)
-    await drive(70, -145)"""
-
-async def whiterun():
-    motion_sensor.reset_yaw(0)
-    time.sleep_ms(250)
+    time.sleep_ms(150)
     motor.reset_relative_position(port.F, 0)
     motor.reset_relative_position(port.E, 0)
     motor.run_for_degrees(port.F, 100, -400, acceleration= 950, deceleration= 950)
     motor.run_for_degrees(port.E, 250, 1050)
     await drive(92, 0) # Drive the boat to destination
     await motor.run_for_degrees(port.F, 500, 800)
-    await motor.run_for_degrees(port.F, 500, -400)
+    await motor.run_for_degrees(port.F, 550, -400)
     await motor.run_for_degrees(port.E, 250, -1050)
     motor.run_for_degrees(port.E, 150, -1050)
     await drive(-45, 0)
     await motor.run_for_degrees(port.E, 200, 1050)
     await turn(-45, 1110, 1.2)
     motor.run_for_degrees(port.E, 100, 1050)
-    await drive(25, -45)
-    await turn(0)
-    await drive(60, 0)
+    await drive(23, -45)
+    await turn(-3)
+    await drive(60, -3, 1110, 800)
     await turn(30)
-    await drive(45, 30)
+    await drive(42, 30, 1110, 1000)
 
-def nupp(): # returns True, when one of the arrow buttons pressed
+async def magentarun(): # IX run: M12, M11, M10, M09
+    motion_sensor.reset_yaw(0)
+    time.sleep_ms(250)
+    await drive(15, 0)
+    await turn(-25, 1110, 0.9)
+    await drive(49, -25, 900)
+    await turn(44, 1110, 0.9)
+    await drive(19, 44, 800)
+    await motor.run_for_degrees(port.F, 500, 1050)
+    await drive(-17, 45, 800)
+    await turn(120, 1110, 0.9)
+    await drive(-45, 120, 800)
+    await motor.run_for_degrees(port.E, -1200, 700)
+    motor.run_for_degrees(port.E, 100, 700)
+    await drive(-17, 125, 1110, 900)
+    time.sleep_ms(500)
+    await drive(8, 135, 1110, 800)
+    await turn(150)
+
+def is_pressed(): # returns True, when one of the arrow buttons pressed
     return button.pressed(button.LEFT) or button.pressed(button.RIGHT)
 
 async def main():
     #resets the gyro for start
     motion_sensor.reset_yaw(0)
-    time.sleep_ms(1000)
+    time.sleep_ms(250)
     light_matrix.write("?")
     last_color = color.UNKNOWN
     color_runs = { # color database
@@ -271,19 +294,19 @@ async def main():
                 light.color(light.CONNECT, current_color)
 
         # start run with button press and tool color detection
-        if nupp() and current_color in color_runs:
+        if is_pressed() and current_color in color_runs:
             sound.beep(440, 300) # beep to know that run has been activated
             await color_runs[current_color]()# trigger the corresponding run
 
         # handle UNKNOWN color (no attachments on robot)
         if current_color == color.UNKNOWN:
-            if abs(difference(0 - motor.absolute_position(port.E))) >= 2 or abs(difference(0 - motor.absolute_position(port.F))) >= 2:
+            if abs(difference(0 - motor.absolute_position(port.E))) >= 2 or abs(difference(0 - motor.absolute_position(port.F))) >= 2: # if no attachments are on the robot, tool motors reset to 0.
                 motor.run_to_absolute_position(port.F, 0, 1050)
                 await motor.run_to_absolute_position(port.E, 0, 1050)
-            if nupp():
+            if is_pressed(): # VIII run: coral reef segments
                 light_matrix.write(str(hub.temperature()))
                 motion_sensor.reset_yaw(0)
                 await drive(8, 0, 100, 50)
-                await drive(-14, 0)
+                await drive(-14, 0, 300, 100)
 
 runloop.run(main())
